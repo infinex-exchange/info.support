@@ -2,6 +2,7 @@
 
 use Infinex\Exceptions\Error;
 use function Infinex\Validation\validateEmail;
+use React\Promise;
 
 class SupportAPI {
     private $log;
@@ -84,23 +85,23 @@ class SupportAPI {
             throw new Error('VALIDATION_ERROR', 'txid', 400);
         
         return $this -> amqp -> call(
-            'account.account',
-            'getUser',
-            [ 'uid' => $auth['uid'] ]
-        ) -> then(function($user) use($th, $body) {
+            'wallet.wallet',
+            'getAsset',
+            [ 'symbol' => @$body['asset'] ]
+        ) -> then(function($asset) use($th, $auth, $body) {
             return $th -> amqp -> call(
-                'wallet.wallet',
-                'getAsset',
-                [ 'symbol' => @$body['asset'] ]
-            ) -> then(function($asset) use($th, $body, $user) {
+                'wallet.io',
+                'getAnPair',
+                [
+                    'assetid' => $asset['assetid'],
+                    'networkSymbol' => @$body['network']
+                ]
+            ) -> then(function($an) use($th, $auth, $body, $asset) {
                 return $th -> amqp -> call(
-                    'wallet.io',
-                    'getAnPair',
-                    [
-                        'assetid' => $asset['assetid'],
-                        'networkSymbol' => @$body['network']
-                    ]
-                ) -> then(function($an) use($th, $body, $user, $asset) {
+                    'account.account',
+                    'getUser',
+                    [ 'uid' => $auth['uid'] ]
+                ) -> then(function($user) use($th, $body, $asset, $an) {
                     $text = 'E-mail (verified): '.$user['email'].'<br>'
                           . 'Asset: '.$asset['name'].' ('.$asset['symbol'].')<br>'
                           . 'Network: '.$an['network']['name'].'<br>'
@@ -129,34 +130,54 @@ class SupportAPI {
             throw new Error('VALIDATION_ERROR', 'description', 400);
         
         return $this -> amqp -> call(
-            'account.account',
-            'getUser',
-            [ 'uid' => $auth['uid'] ]
-        ) -> then(function($user) use($th, $body) {
-            return $th -> amqp -> call(
+            'wallet.io',
+            'getTransaction',
+            [ 'xid' => @$body['xid'] ]
+        ) -> then(function($tx) use($th, $auth, $body) {
+            if($tx['uid'] != $auth['uid'])
+                throw new Error('FORBIDDEN', 'No permission to transaction '.$tx['xid'], 403);
+            
+            if($tx['type'] != 'WITHDRAWAL')
+                throw new Error('INVALID_TYPE', 'Transaction '.$tx['xid'].' is not a withdrawal', 400);
+            
+            if(!in_array($tx['status'], [
+            ]))
+                throw new Error('FORBIDDEN_STATUS', 'Forbidden due to transaction status', 403);
+            
+            if($tx['createTime'] > time() - (8 * 60 * 60))
+                throw new Error('TOO_EARLY', '
+        
+            $promises = [];
+            
+            $promises[] = $th -> amqp -> call(
                 'wallet.wallet',
                 'getAsset',
-                [ 'symbol' => @$body['asset'] ]
-            ) -> then(function($asset) use($th, $body, $user) {
-                return $th -> amqp -> call(
-                    'wallet.io',
-                    'getAnPair',
-                    [
-                        'assetid' => $asset['assetid'],
-                        'networkSymbol' => @$body['network']
-                    ]
-                ) -> then(function($an) use($th, $body, $user, $asset) {
-                    $text = 'E-mail (verified): '.$user['email'].'<br>'
-                          . 'Asset: '.$asset['name'].' ('.$asset['symbol'].')<br>'
-                          . 'Network: '.$an['network']['name'].'<br>'
-                          . 'Txid: '.$body['txid'].'<br>'
-                          . 'Description: '.$body['description'];
-                
-                    $th -> sendMail(
-                        'Deposit '.$asset['symbol'].' ('.$an['network']['name'].')',
-                        $text
-                    );
-                });
+                [ 'assetid' => $tx['assetid'] ]
+            );
+            
+            $promises[] = $th -> amqp -> call(
+                'wallet.io',
+                'getNetwork',
+                [ 'netid' => $tx['netid'] ]
+            );
+            
+            $promises[] = $th -> amqp -> call(
+                'account.account',
+                'getUser',
+                [ 'uid' => $auth['uid']
+            );
+            
+            return Promise\all($promises) -> then(function($data) use($th, $body) {
+                $text = 'E-mail (verified): '.$user['email'].'<br>'
+                              . 'Asset: '.$asset['name'].' ('.$asset['symbol'].')<br>'
+                              . 'Network: '.$an['network']['name'].'<br>'
+                              . 'Txid: '.$body['txid'].'<br>'
+                              . 'Description: '.$body['description'];
+                    
+                        $th -> sendMail(
+                            'Deposit '.$asset['symbol'].' ('.$an['network']['name'].')',
+                            $text
+                        );
             });
         });
     }
