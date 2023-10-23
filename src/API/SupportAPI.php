@@ -171,15 +171,13 @@ class SupportAPI {
             );
             
             return Promise\all($promises) -> then(function($data) use($th, $body, $tx) {
-                var_dump($data);
-                return;
                 $asset = $data[0];
-                $an = $data[1];
+                $network = $data[1];
                 $user = $data[2];
                 
                 $text = 'E-mail (verified): '.$user['email'].'<br>'
                       . 'Asset: '.$asset['name'].' ('.$asset['symbol'].')<br>'
-                      . 'Network: '.$an['network']['name'].'<br>'
+                      . 'Network: '.$network['name'].'<br>'
                       . 'Address: '.$tx['address'].'<br>'
                       . 'Memo: '.($tx['memo'] ? $tx['memo'] : '-').'<br>'
                       . 'Xid: '.$tx['xid'].'<br>'
@@ -187,7 +185,7 @@ class SupportAPI {
                       . 'Description: '.$body['description'];
             
                 $th -> sendMail(
-                    'Withdrawal '.$asset['symbol'].' ('.$an['network']['name'].')',
+                    'Withdrawal '.$asset['symbol'].' ('.$network['name'].')',
                     $text
                 );
             });
