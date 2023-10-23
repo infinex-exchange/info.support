@@ -164,7 +164,7 @@ class SupportAPI {
             $promises[] = $th -> amqp -> call(
                 'account.account',
                 'getUser',
-                [ 'uid' => $auth['uid']
+                [ 'uid' => $auth['uid'] ]
             );
             
             return Promise\all($promises) -> then(function($data) use($th, $body, $tx) {
