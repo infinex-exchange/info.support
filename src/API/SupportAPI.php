@@ -138,14 +138,14 @@ class SupportAPI {
                 throw new Error('FORBIDDEN', 'No permission to transaction '.$tx['xid'], 403);
             
             if($tx['type'] != 'WITHDRAWAL')
-                throw new Error('INVALID_TYPE', 'Transaction '.$tx['xid'].' is not a withdrawal', 400);
+                throw new Error('NOT_WITHDRAWAL', 'Transaction '.$tx['xid'].' is not a withdrawal', 422);
             
             if(!in_array($tx['status'], [
             ]))
-                throw new Error('FORBIDDEN_STATUS', 'Forbidden due to transaction status', 403);
+                throw new Error('STATUS_NOT_ALLOWED', 'Transaction status not allowed', 403);
             
             if($tx['createTime'] > time() - (8 * 60 * 60))
-                throw new Error('TOO_EARLY', '
+                throw new Error('TOO_EARLY', 'Less than 8 hours have passed since the withdrawal order', 425);
         
             $promises = [];
             
@@ -167,17 +167,24 @@ class SupportAPI {
                 [ 'uid' => $auth['uid']
             );
             
-            return Promise\all($promises) -> then(function($data) use($th, $body) {
+            return Promise\all($promises) -> then(function($data) use($th, $body, $tx) {
+                $asset = $data[0];
+                $an = $data[1];
+                $user = $data[2];
+                
                 $text = 'E-mail (verified): '.$user['email'].'<br>'
-                              . 'Asset: '.$asset['name'].' ('.$asset['symbol'].')<br>'
-                              . 'Network: '.$an['network']['name'].'<br>'
-                              . 'Txid: '.$body['txid'].'<br>'
-                              . 'Description: '.$body['description'];
-                    
-                        $th -> sendMail(
-                            'Deposit '.$asset['symbol'].' ('.$an['network']['name'].')',
-                            $text
-                        );
+                      . 'Asset: '.$asset['name'].' ('.$asset['symbol'].')<br>'
+                      . 'Network: '.$an['network']['name'].'<br>'
+                      . 'Address: '.$tx['address'].'<br>'
+                      . 'Memo: '.($tx['memo'] ? : $tx['memo'] : '-').'<br>'
+                      . 'Xid: '.$tx['xid'].'<br>'
+                      . 'Txid: '.($tx['txid'] ? $tx['txid'] : '-').'<br>'
+                      . 'Description: '.$body['description'];
+            
+                $th -> sendMail(
+                    'Withdrawal '.$asset['symbol'].' ('.$an['network']['name'].')',
+                    $text
+                );
             });
         });
     }
