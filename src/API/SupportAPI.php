@@ -171,6 +171,8 @@ class SupportAPI {
             );
             
             return Promise\all($promises) -> then(function($data) use($th, $body, $tx) {
+                var_dump($data);
+                return;
                 $asset = $data[0];
                 $an = $data[1];
                 $user = $data[2];
