@@ -141,6 +141,9 @@ class SupportAPI {
                 throw new Error('NOT_WITHDRAWAL', 'Transaction '.$tx['xid'].' is not a withdrawal', 422);
             
             if(!in_array($tx['status'], [
+                'CONFIRM_PENDING',
+                'DONE',
+                'CANCEL_PENDING'
             ]))
                 throw new Error('STATUS_NOT_ALLOWED', 'Transaction status not allowed', 403);
             
