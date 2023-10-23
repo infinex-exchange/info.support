@@ -176,7 +176,7 @@ class SupportAPI {
                       . 'Asset: '.$asset['name'].' ('.$asset['symbol'].')<br>'
                       . 'Network: '.$an['network']['name'].'<br>'
                       . 'Address: '.$tx['address'].'<br>'
-                      . 'Memo: '.($tx['memo'] ? : $tx['memo'] : '-').'<br>'
+                      . 'Memo: '.($tx['memo'] ? $tx['memo'] : '-').'<br>'
                       . 'Xid: '.$tx['xid'].'<br>'
                       . 'Txid: '.($tx['txid'] ? $tx['txid'] : '-').'<br>'
                       . 'Description: '.$body['description'];
