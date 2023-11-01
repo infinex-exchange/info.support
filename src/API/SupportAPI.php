@@ -138,17 +138,17 @@ class SupportAPI {
                 throw new Error('FORBIDDEN', 'No permission to transaction '.$tx['xid'], 403);
             
             if($tx['type'] != 'WITHDRAWAL')
-                throw new Error('NOT_WITHDRAWAL', 'Transaction '.$tx['xid'].' is not a withdrawal', 422);
+                throw new Error('INVALID_TRANSACTION_TYPE', 'Transaction '.$tx['xid'].' is not a withdrawal', 405);
             
             if(!in_array($tx['status'], [
                 'CONFIRM_PENDING',
                 'DONE',
                 'CANCEL_PENDING'
             ]))
-                throw new Error('STATUS_NOT_ALLOWED', 'Transaction status not allowed', 403);
+                throw new Error('INVALID_TRANSACTION_STATUS', 'Transaction status not allowed', 405);
             
             if($tx['createTime'] > time() - (8 * 60 * 60))
-                throw new Error('TOO_EARLY', 'Less than 8 hours have passed since the withdrawal order', 425);
+                throw new Error('TOO_EARLY', 'Less than 8 hours have passed since the withdrawal order', 406);
         
             $promises = [];
             
