@@ -87,14 +87,14 @@ class SupportAPI {
         return $this -> amqp -> call(
             'wallet.wallet',
             'getAsset',
-            [ 'symbol' => @$body['asset'] ]
+            [ 'assetid' => @$body['assetid'] ]
         ) -> then(function($asset) use($th, $auth, $body) {
             return $th -> amqp -> call(
                 'wallet.io',
                 'getAnPair',
                 [
                     'assetid' => $asset['assetid'],
-                    'networkSymbol' => @$body['network']
+                    'netid' => @$body['netid']
                 ]
             ) -> then(function($an) use($th, $auth, $body, $asset) {
                 return $th -> amqp -> call(
@@ -103,13 +103,13 @@ class SupportAPI {
                     [ 'uid' => $auth['uid'] ]
                 ) -> then(function($user) use($th, $body, $asset, $an) {
                     $text = 'E-mail (verified): '.$user['email'].'<br>'
-                          . 'Asset: '.$asset['name'].' ('.$asset['symbol'].')<br>'
+                          . 'Asset: '.$asset['name'].' ('.$asset['assetid'].')<br>'
                           . 'Network: '.$an['network']['name'].'<br>'
                           . 'Txid: '.$body['txid'].'<br>'
                           . 'Description: '.$body['description'];
                 
                     $th -> sendMail(
-                        'Deposit '.$asset['symbol'].' ('.$an['network']['name'].')',
+                        'Deposit '.$asset['assetid'].' ('.$an['network']['name'].')',
                         $text
                     );
                 });
@@ -176,7 +176,7 @@ class SupportAPI {
                 $user = $data[2];
                 
                 $text = 'E-mail (verified): '.$user['email'].'<br>'
-                      . 'Asset: '.$asset['name'].' ('.$asset['symbol'].')<br>'
+                      . 'Asset: '.$asset['name'].' ('.$asset['assetid'].')<br>'
                       . 'Network: '.$network['name'].'<br>'
                       . 'Address: '.$tx['address'].'<br>'
                       . 'Memo: '.($tx['memo'] ? $tx['memo'] : '-').'<br>'
@@ -185,7 +185,7 @@ class SupportAPI {
                       . 'Description: '.$body['description'];
             
                 $th -> sendMail(
-                    'Withdrawal '.$asset['symbol'].' ('.$network['name'].')',
+                    'Withdrawal '.$asset['assetid'].' ('.$network['name'].')',
                     $text
                 );
             });
